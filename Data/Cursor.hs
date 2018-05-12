@@ -1,4 +1,4 @@
-module Data.Cursor (CursorT (..)) where
+module Data.Cursor (CursorT (..), Here (..), There (..), here, there) where
 
 import Control.Comonad (Comonad (..), (=>>))
 import Control.Comonad.Cofree (Cofree (..), coiter)
