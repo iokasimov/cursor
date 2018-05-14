@@ -1,4 +1,4 @@
-module Data.Cursor (CursorT (..), Here (..), There (..), here, there) where
+module Data.Cursor (CursorT (..), Here (..), There (..), gohere, gothere) where
 
 import Control.Comonad (Comonad (..), (=>>))
 import Control.Comonad.Cofree (Cofree (..), coiter)
@@ -15,14 +15,16 @@ instance Functor w => Functor (CursorT w) where
 instance Comonad w => Comonad (CursorT w) where
 	extract (CursorT _ x _) = extract x
 	duplicate el@(CursorT h x t) = CursorT
-		(coiter here el) (x =>> (\c -> CursorT h c t)) (coiter there el)
+		(coiter (gohere False) el) (x =>> (\c -> CursorT h c t)) (coiter (gothere False) el)
 
-there :: Comonad w => CursorT w a -> There (CursorT w a)
-there e@(CursorT _ _ (_ :< Deadend)) = Deadend
-there (CursorT h x (u :< There t)) = There $ CursorT
-	(extract x :< Here h) (x $> u) t
+gothere :: Comonad w => Bool -> CursorT w a -> There (CursorT w a)
+gothere _ e@(CursorT _ _ (_ :< Deadend)) = Deadend
+gothere squash (CursorT h x (u :< There t)) =
+	if squash then There $ CursorT h (x $> u) t -- squash focus
+	else There $ CursorT (extract x :< Here h) (x $> u) t
 
-here :: Comonad w => CursorT w a -> Here (CursorT w a)
-here e@(CursorT (_ :< Logjam) _ _) = Logjam
-here (CursorT (d :< Here h) x t) = Here $ CursorT
-	h (x $> d) (extract x :< There t)
+gohere :: Comonad w => Bool -> CursorT w a -> Here (CursorT w a)
+gohere _ e@(CursorT (_ :< Logjam) _ _) = Logjam
+gohere squash (CursorT (d :< Here h) x t) =
+	if squash then Here $ CursorT h (x $> d) t -- squash focus
+	else Here $ CursorT h (x $> d) (extract x :< There t)
