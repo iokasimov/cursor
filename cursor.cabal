@@ -21,6 +21,6 @@ library
   other-modules:
     Data.Cursor.Here
     Data.Cursor.There
-  build-depends: base == 4.*, free, comonad, lens
+  build-depends: base == 4.*, free, comonad, lens, these
   default-language: Haskell2010
   ghc-options: -fno-warn-tabs
