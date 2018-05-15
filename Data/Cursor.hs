@@ -41,9 +41,9 @@ instance Functor w => Functor (CursorT w) where
 instance Comonad w => Comonad (CursorT w) where
 	extract (CursorT _ x _) = extract x
 	duplicate el@(CursorT h x t) = CursorT
-		(coiter (undefined Nothing) el)
+		(coiter (undefined False) el)
 		(x =>> (\c -> CursorT h c t))
-		(coiter (gothere Nothing) el)
+		(coiter (gothere False) el)
 
 instance ComonadTrans CursorT where
 	lower (CursorT _ x _) = x
@@ -58,30 +58,12 @@ turnback = NT $ \case
 	There x -> Here x
 	Deadend -> Logjam
 
-gohere :: Comonad w
-	=> Maybe (These a a) -- ^ Squashing focus, here's focus, both or nothing
-	-> CursorT w a -- ^ The cursor to move
-	-> Here (CursorT w a)
+gohere :: Comonad w => Bool -> CursorT w a -> Here (CursorT w a)
 gohere _ e@(CursorT (_ :< Logjam) _ _) = Logjam
-gohere Nothing (CursorT (d :< Here h) x t) =
-	Here $ CursorT h (x $> d) (extract x :< There t)
-gohere (Just (This _x)) (CursorT (d :< Here h) x t) =
-	Here $ CursorT h (x $> d) t
-gohere (Just (That _d)) (CursorT (d :< Here h) x t) =
-	(\h' -> CursorT h' (x) t) <$> (unwrap h)
-gohere (Just (These _x _u)) (CursorT (d :< Here h) x t) =
-	 (\h' -> CursorT h' (x $> extract h) t) <$> (unwrap h)
+gohere False (CursorT (d :< Here h) x t) = Here $ CursorT h (x $> d) (extract x :< There t)
+gohere True (CursorT (d :< Here h) x t) = Here $ CursorT h (x $> d) t
 
-gothere :: Comonad w
-	=> Maybe (These a a) -- ^ Squashing focus, there's focus, both or nothing
-	-> CursorT w a  -- ^ The cursor to move
-	-> There (CursorT w a)
+gothere :: Comonad w => Bool -> CursorT w a -> There (CursorT w a)
 gothere _ e@(CursorT _ _ (_ :< Deadend)) = Deadend
-gothere Nothing (CursorT h x (u :< There t)) =
-	There $ CursorT (extract x :< Here h) (x $> u) t
-gothere (Just (This _x)) (CursorT h x (u :< There t)) =
-	There $ CursorT h (x $> u) t
-gothere (Just (That _u)) (CursorT h x (u :< There t)) =
-	CursorT h x <$> (unwrap t)
-gothere (Just (These _x _u)) (CursorT h x (u :< There t)) =
-	CursorT h (x $> extract t) <$> (unwrap t)
+gothere False (CursorT h x (u :< There t)) = There $ CursorT (extract x :< Here h) (x $> u) t
+gothere True (CursorT h x (u :< There t)) = There $ CursorT h (x $> u) t
