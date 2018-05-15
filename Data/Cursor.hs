@@ -15,6 +15,7 @@ module Data.Cursor
 
 import Control.Comonad (Comonad (..), (=>>))
 import Control.Comonad.Cofree (Cofree (..), coiter, unwrap)
+import Control.Comonad.Trans.Class (ComonadTrans (..))
 import Control.Natural ((:~>) (..))
 import Control.Lens (Lens')
 import Data.Functor (($>))
@@ -40,9 +41,12 @@ instance Functor w => Functor (CursorT w) where
 instance Comonad w => Comonad (CursorT w) where
 	extract (CursorT _ x _) = extract x
 	duplicate el@(CursorT h x t) = CursorT
-		(coiter (undefined Nothing id) el)
+		(coiter (undefined Nothing) el)
 		(x =>> (\c -> CursorT h c t))
-		(coiter (gothere Nothing id) el)
+		(coiter (gothere Nothing) el)
+
+instance ComonadTrans CursorT where
+	lower (CursorT _ x _) = x
 
 turnforward :: Here :~> There
 turnforward = NT $ \case
@@ -56,30 +60,28 @@ turnback = NT $ \case
 
 gohere :: Comonad w
 	=> Maybe (These a a) -- ^ Squashing focus, here's focus, both or nothing
-	-> (w a -> w a) -- ^ Do something with lower comonad
 	-> CursorT w a -- ^ The cursor to move
 	-> Here (CursorT w a)
-gohere _ _ e@(CursorT (_ :< Logjam) _ _) = Logjam
-gohere Nothing inner (CursorT (d :< Here h) x t) =
-	Here $ CursorT h (inner $ x $> d) (extract x :< There t)
-gohere (Just (This _x)) inner (CursorT (d :< Here h) x t) =
-	Here $ CursorT h (inner $ x $> d) t
-gohere (Just (That _d)) inner (CursorT (d :< Here h) x t) =
-	(\h' -> CursorT h' (inner x) t) <$> (unwrap h)
-gohere (Just (These _x _u)) inner (CursorT (d :< Here h) x t) =
-	 (\h' -> CursorT h' (inner $ x $> extract h) t) <$> (unwrap h)
+gohere _ e@(CursorT (_ :< Logjam) _ _) = Logjam
+gohere Nothing (CursorT (d :< Here h) x t) =
+	Here $ CursorT h (x $> d) (extract x :< There t)
+gohere (Just (This _x)) (CursorT (d :< Here h) x t) =
+	Here $ CursorT h (x $> d) t
+gohere (Just (That _d)) (CursorT (d :< Here h) x t) =
+	(\h' -> CursorT h' (x) t) <$> (unwrap h)
+gohere (Just (These _x _u)) (CursorT (d :< Here h) x t) =
+	 (\h' -> CursorT h' (x $> extract h) t) <$> (unwrap h)
 
 gothere :: Comonad w
 	=> Maybe (These a a) -- ^ Squashing focus, there's focus, both or nothing
-	-> (w a -> w a) -- ^ Do something with lower comonad
 	-> CursorT w a  -- ^ The cursor to move
 	-> There (CursorT w a)
-gothere _ _ e@(CursorT _ _ (_ :< Deadend)) = Deadend
-gothere Nothing inner (CursorT h x (u :< There t)) =
-	There $ CursorT (extract x :< Here h) (inner $ x $> u) t
-gothere (Just (This _x)) inner (CursorT h x (u :< There t)) =
-	There $ CursorT h (inner $ x $> u) t
-gothere (Just (That _u)) inner (CursorT h x (u :< There t)) =
-	CursorT h (inner x) <$> (unwrap t)
-gothere (Just (These _x _u)) inner (CursorT h x (u :< There t)) =
-	CursorT h (inner $ x $> extract t) <$> (unwrap t)
+gothere _ e@(CursorT _ _ (_ :< Deadend)) = Deadend
+gothere Nothing (CursorT h x (u :< There t)) =
+	There $ CursorT (extract x :< Here h) (x $> u) t
+gothere (Just (This _x)) (CursorT h x (u :< There t)) =
+	There $ CursorT h (x $> u) t
+gothere (Just (That _u)) (CursorT h x (u :< There t)) =
+	CursorT h x <$> (unwrap t)
+gothere (Just (These _x _u)) (CursorT h x (u :< There t)) =
+	CursorT h (x $> extract t) <$> (unwrap t)

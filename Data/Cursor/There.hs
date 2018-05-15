@@ -1,5 +1,7 @@
 module Data.Cursor.There (There (..)) where
 
+import Control.Applicative (Applicative (..), Alternative (..))
+
 data There a = Deadend | There a deriving Show
 
 instance Functor There where

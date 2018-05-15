@@ -1,5 +1,7 @@
 module Data.Cursor.Here (Here (..)) where
 
+import Control.Applicative (Applicative (..), Alternative (..))
+
 data Here a = Logjam | Here a deriving Show
 
 instance Functor Here where
