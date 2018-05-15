@@ -21,6 +21,7 @@ library
   other-modules:
     Data.Cursor.Here
     Data.Cursor.There
-  build-depends: base == 4.*, free, comonad, lens, these
+  build-depends: base == 4.*, free, comonad, lens, these, natural-transformation
   default-language: Haskell2010
   ghc-options: -fno-warn-tabs
+  default-extensions: TypeOperators, LambdaCase

@@ -11,10 +11,11 @@
 
 module Data.Cursor
 	(CursorT (..), Here (..), There (..)
-	, focus, heres, theres, gohere, gothere) where
+	, turnforward, turnback, focus, heres, theres, gohere, gothere) where
 
 import Control.Comonad (Comonad (..), (=>>))
 import Control.Comonad.Cofree (Cofree (..), coiter, unwrap)
+import Control.Natural ((:~>) (..))
 import Control.Lens (Lens')
 import Data.Functor (($>))
 import Data.These (These (..))
@@ -42,6 +43,16 @@ instance Comonad w => Comonad (CursorT w) where
 		(coiter (undefined Nothing id) el)
 		(x =>> (\c -> CursorT h c t))
 		(coiter (gothere Nothing id) el)
+
+turnforward :: Here :~> There
+turnforward = NT $ \case
+	Here x -> There x
+	Logjam -> Deadend
+
+turnback :: There :~> Here
+turnback = NT $ \case
+	There x -> Here x
+	Deadend -> Logjam
 
 gohere :: Comonad w
 	=> Maybe (These a a) -- ^ Squashing focus, here's focus, both or nothing
