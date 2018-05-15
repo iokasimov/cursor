@@ -11,6 +11,11 @@ instance Applicative There where
 	There f <*> x = f <$> x
 	Deadend <*> _ = Deadend
 
+instance Alternative There where
+	empty = Deadend
+	Deadend <|> r = r
+	l <|> _ = l
+
 instance Monad There where
 	There x >>= k = k x
 	Deadend >>= _ = Deadend

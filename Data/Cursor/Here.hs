@@ -11,6 +11,11 @@ instance Applicative Here where
 	Here f <*> x = f <$> x
 	Logjam <*> _ = Logjam
 
+instance Alternative Here where
+	empty = Logjam
+	Logjam <|> r = r
+	l <|> _ = l
+
 instance Monad Here where
 	Here x >>= k = k x
 	Logjam >>= _ = Logjam
