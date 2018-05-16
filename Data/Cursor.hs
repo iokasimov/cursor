@@ -10,8 +10,9 @@
 --------------------------------------------------------------------------------
 
 module Data.Cursor
-	(CursorT (..), Here (..), There (..)
-	, turnforward, turnback, focus, heres, theres, gohere, gothere) where
+	( CursorT (..), Here (..), There (..)
+	, turnforward, turnback, focus, heres, theres
+	, gohere, gothere, fliphere, flipthere) where
 
 import Control.Comonad (Comonad (..), (=>>))
 import Control.Comonad.Cofree (Cofree (..), coiter, unwrap)
@@ -67,3 +68,7 @@ gothere :: Comonad w => Bool -> CursorT w a -> There (CursorT w a)
 gothere _ e@(CursorT _ _ (_ :< Deadend)) = Deadend
 gothere False (CursorT h x (u :< There t)) = There $ CursorT (extract x :< Here h) (x $> u) t
 gothere True (CursorT h x (u :< There t)) = There $ CursorT h (x $> u) t
+
+fliphere, flipthere :: Comonad w => CursorT w a -> CursorT w a
+fliphere (CursorT (hx :< h) x t) = CursorT (extract x :< h) (x $> hx) t
+flipthere (CursorT h x (tx :< t)) = CursorT h (x $> tx) (extract x :< t)
